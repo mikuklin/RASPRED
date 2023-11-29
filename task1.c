@@ -9,7 +9,7 @@ int max(int a, int b) {
 }
 
 
-int RecvNumberFrom(int coordinates[2], MPI_Comm cart)
+int recieve(int coordinates[2], MPI_Comm cart)
 {
     MPI_Status status;
     int rank, number;
@@ -18,7 +18,7 @@ int RecvNumberFrom(int coordinates[2], MPI_Comm cart)
     return number;
 }
 
-void ISendNumberTo(int coordinates[2], int number, MPI_Comm cart)
+void send(int coordinates[2], int number, MPI_Comm cart)
 {
     MPI_Request request;
     int rank;
@@ -26,51 +26,51 @@ void ISendNumberTo(int coordinates[2], int number, MPI_Comm cart)
     MPI_Isend(&number, 1, MPI_INT, rank, 0, cart, &request);
 }
 
-int Master(int coordinates[2], int number, MPI_Comm cart)
+int get_max(int coordinates[2], int number, MPI_Comm cart)
 {
     int up_coordinates[2] = {coordinates[0], coordinates[1] + 1};
     int right_coordinates[2] = {coordinates[0] + 1, coordinates[1]};
-    int up_number = RecvNumberFrom(up_coordinates, cart);
-    int right_number = RecvNumberFrom(right_coordinates, cart);
+    int up_number = recieve(up_coordinates, cart);
+    int right_number = recieve(right_coordinates, cart);
     int max_number = max(up_number, right_number);
     max_number = max(max_number, number);
     return max_number;
 }
 
-void DownRightProcess(int coordinates[2], int number, MPI_Comm cart)
+void up_to_left(int coordinates[2], int number, MPI_Comm cart)
 {
     int up_coordinates[2] = {coordinates[0], coordinates[1] + 1};
     int left_coordinates[2] = {coordinates[0] - 1, coordinates[1]};
-    int up_number = RecvNumberFrom(up_coordinates, cart);
+    int up_number = recieve(up_coordinates, cart);
     int max_number = max(number, up_number);
-    ISendNumberTo(left_coordinates, max_number, cart);
+    send(left_coordinates, max_number, cart);
 }
 
-void DownProcesses(int coordinates[2], int number, MPI_Comm cart)
+void up_right_to_left(int coordinates[2], int number, MPI_Comm cart)
 {
     int up_coordinates[2] = {coordinates[0], coordinates[1] + 1};
     int right_coordinates[2] = {coordinates[0] + 1, coordinates[1]};
     int left_coordinates[2] = {coordinates[0] - 1, coordinates[1]};
-    int up_number = RecvNumberFrom(up_coordinates, cart);
-    int right_number = RecvNumberFrom(right_coordinates, cart);
+    int up_number = recieve(up_coordinates, cart);
+    int right_number = recieve(right_coordinates, cart);
     int max_number = max(up_number, right_number);
     max_number = max(max_number, number);
-    ISendNumberTo(left_coordinates, max_number, cart);
+    send(left_coordinates, max_number, cart);
 }
 
-void UpProcesses(int coordinates[2], int number, MPI_Comm cart)
+void to_down(int coordinates[2], int number, MPI_Comm cart)
 {
     int down_coordinates[2] = {coordinates[0], coordinates[1] - 1};
-    ISendNumberTo(down_coordinates, number, cart);
+    send(down_coordinates, number, cart);
 }
 
-void InternalProcesses(int coordinates[2], int number, MPI_Comm cart)
+void up_to_down(int coordinates[2], int number, MPI_Comm cart)
 {
     int up_coordinates[2] = {coordinates[0], coordinates[1] + 1};
     int down_coordinates[2] = {coordinates[0], coordinates[1] - 1};
-    int up_number = RecvNumberFrom(up_coordinates, cart);
+    int up_number = recieve(up_coordinates, cart);
     int max_number = max(number, up_number);
-    ISendNumberTo(down_coordinates, max_number, cart);
+    send(down_coordinates, max_number, cart);
 }
 
 int main(int argc, char *argv[])
@@ -92,15 +92,15 @@ int main(int argc, char *argv[])
 
     int max_number;
 	if (coordinates[0] == 0 && coordinates[1] == 0) {
-        max_number = Master(coordinates, number, cart);
+        max_number = get_max(coordinates, number, cart);
     } else if (coordinates[0] == 3 && coordinates[1] == 0) {
-        DownRightProcess(coordinates, number, cart);
+        up_to_left(coordinates, number, cart);
     } else if (coordinates[1] == 0) {
-        DownProcesses(coordinates, number, cart);
+        up_right_to_left(coordinates, number, cart);
     } else if (coordinates[1] == 3) {
-        UpProcesses(coordinates, number, cart);
+        to_down(coordinates, number, cart);
     } else {
-        InternalProcesses(coordinates, number, cart);
+        up_to_down(coordinates, number, cart);
     }
 
     printf("Max number: %d\n", max_number); fflush(stdout);
