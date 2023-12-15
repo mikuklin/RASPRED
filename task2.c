@@ -204,15 +204,15 @@ int main(int argc, char **argv) {
 	    }
 	    MPI_Barrier(comm);    
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     if (rank== 0) 
     printf("\nANSWER\n");fflush(stdout);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     for (int i = 0; i < size; i ++) {
         if (rank == i) {
             print_matrix(matrix, end_row - start_row, 2*n);
         }
-        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(comm);
     }
     MPI_Finalize();
     return 0;
